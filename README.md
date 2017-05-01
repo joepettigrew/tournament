@@ -6,7 +6,6 @@ REQUIREMENTS
 -------------
 * Python 2.7
 * PostgreSQL
-* Bleach
 
 FILE STRUCTURE
 -------------
