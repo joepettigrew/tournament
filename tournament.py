@@ -12,7 +12,7 @@ def connect(database_name="tournament"):
         db = psycopg2.connect("dbname={}".format(database_name))
         c = db.cursor()
         return db, c
-    except:
+    except TypeError:
         print("Couldn't connect to DB")
 
 
@@ -83,7 +83,8 @@ def playerStandings():
         p.player_id,
         p.player_name,
         COUNT(CASE WHEN m.winner_id = p.player_id THEN 1 END) as wins,
-        COUNT(CASE WHEN m.winner_id = p.player_id OR m.loser_id = p.player_id THEN 1 END) as matches
+        COUNT(CASE WHEN m.winner_id = p.player_id OR
+                        m.loser_id = p.player_id THEN 1 END) as matches
     FROM matches as m
     RIGHT JOIN players as p
     ON p.player_id = m.winner_id OR p.player_id = m.loser_id
