@@ -7,6 +7,7 @@
 -- these lines here.
 
 -- Create database called tournament
+DROP DATABASE IF EXISTS tournament;
 CREATE DATABASE tournament;
 
 -- Create Players table
@@ -19,7 +20,7 @@ CREATE TABLE players (
 -- Create Players table
 CREATE TABLE matches (
   match_id serial NOT NULL PRIMARY KEY,
-  winner BOOLEAN NOT NULL,
-  player_id INT NOT NULL references players(player_id),
+  winner_id INT NOT NULL references players(player_id),
+  loser_id INT NOT NULL references players(player_id),
   date_added TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

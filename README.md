@@ -18,6 +18,12 @@ INSTALLATION
 -------------
 1. Install PostgreSQL on your server
 2. Use the included ``tournaments.sql`` to populate the necessary database and tables.
+3. Then use the following command lines to execute:
+
+```
+$ psql -f tournament.sql
+$ python tournament_test.py
+```
 
 Once complete, use the following functions to interact with the database:
 * ``registerPlayer(name)`` : Register new player

@@ -4,19 +4,22 @@
 #
 
 import psycopg2
-import bleach
 
 
-def connect():
+def connect(database_name="tournament"):
     """Connect to the PostgreSQL database.  Returns a database connection."""
-    return psycopg2.connect("dbname=tournament")
+    try:
+        db = psycopg2.connect("dbname={}".format(database_name))
+        c = db.cursor()
+        return db, c
+    except:
+        print("Couldn't connect to DB")
 
 
 def deleteMatches():
     """Remove all the match records from the database."""
-    db = connect()
-    c = db.cursor()
-    query = "DELETE FROM matches;"
+    db, c = connect()
+    query = "TRUNCATE matches;"
     c.execute(query)
     db.commit()
     db.close()
@@ -24,9 +27,8 @@ def deleteMatches():
 
 def deletePlayers():
     """Remove all the player records from the database."""
-    db = connect()
-    c = db.cursor()
-    query = "DELETE FROM players;"
+    db, c = connect()
+    query = "TRUNCATE players CASCADE;"
     c.execute(query)
     db.commit()
     db.close()
@@ -34,8 +36,7 @@ def deletePlayers():
 
 def countPlayers():
     """Returns the number of players currently registered."""
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     query = "SELECT COUNT(*) FROM players;"
     c.execute(query)
     rows = c.fetchone()
@@ -52,13 +53,11 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
-    # Sanitize input
-    bleach.clean(name)
-
     # Execute query
-    db = connect()
-    c = db.cursor()
-    c.execute("INSERT INTO players (player_name) VALUES (%s)", (name, ))
+    db, c = connect()
+    query = "INSERT INTO players (player_name) VALUES(%s)"
+    params = (name, )
+    c.execute(query, params)
     db.commit()
     db.close()
 
@@ -76,18 +75,18 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
+
     # Execute query
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
     query = """
     SELECT
         p.player_id,
         p.player_name,
-        COUNT(CASE WHEN m.winner THEN 1 END) as wins,
-        COUNT(m.player_id) as matches
-    FROM players as p
-    LEFT JOIN matches as m
-    ON p.player_id = m.player_id
+        COUNT(CASE WHEN m.winner_id = p.player_id THEN 1 END) as wins,
+        COUNT(CASE WHEN m.winner_id = p.player_id OR m.loser_id = p.player_id THEN 1 END) as matches
+    FROM matches as m
+    RIGHT JOIN players as p
+    ON p.player_id = m.winner_id OR p.player_id = m.loser_id
     GROUP BY p.player_id
     ORDER BY wins DESC;
     """
@@ -103,26 +102,13 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
-    # Sanitize the input
-    bleach.clean(winner)
-    bleach.clean(loser)
-
     # Connect to DB
-    db = connect()
-    c = db.cursor()
+    db, c = connect()
+    query = "INSERT INTO matches (winner_id, loser_id) VALUES (%s, %s)"
+    params = (winner, loser)
 
-    # Record the winner
-    c.execute("""
-    INSERT INTO matches (winner, player_id)
-    VALUES (True, %s);
-    """, (winner,))
-    db.commit()
-
-    # Record the loser
-    c.execute("""
-    INSERT INTO matches (winner, player_id)
-    VALUES (False, %s);
-    """, (loser,))
+    # Record the winner and loser ids
+    c.execute(query, params)
     db.commit()
 
     # Close DB connection
